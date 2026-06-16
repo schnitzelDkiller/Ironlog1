@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta name="theme-color" content="#080c10"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Iron Log"/>
+<title>Iron Log</title>
+<link rel="manifest" href="#" id="manifest-placeholder"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<script>
+// Inline manifest
+const manifest = {
+  name: "Iron Log",
+  short_name: "Iron Log",
+  description: "Gym workout tracker",
+  start_url: ".",
+  display: "standalone",
+  background_color: "#080c10",
+  theme_color: "#080c10",
+  orientation: "portrait",
+  icons: [
+    { src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='32' fill='%23080c10'/%3E%3Ctext x='96' y='130' font-size='110' text-anchor='middle'%3E%F0%9F%8F%8B%EF%B8%8F%3C/text%3E%3C/svg%3E", sizes: "192x192", type: "image/svg+xml" },
+    { src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='80' fill='%23080c10'/%3E%3Ctext x='256' y='360' font-size='300' text-anchor='middle'%3E%F0%9F%8F%8B%EF%B8%8F%3C/text%3E%3C/svg%3E", sizes: "512x512", type: "image/svg+xml" }
+  ]
+};
+const blob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
+document.getElementById('manifest-placeholder').href = URL.createObjectURL(blob);
+</script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Teko:wght@500;600;700&display=swap" rel="stylesheet"/>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  body{background:#080c10;color:#dde3ec;font-family:'DM Sans',sans-serif;max-width:500px;margin:0 auto;min-height:100vh;overscroll-behavior:none;}
+  input[type=number]{-moz-appearance:textfield;}
+  input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;}
+  select{outline:none;}
+  button{outline:none;}
+  :root{
+    --bg:#080c10;--bg1:#0d1219;--bg2:#141c26;--bg3:#1e2a38;
+    --text:#dde3ec;--text2:#8a9ab0;--text3:#3d5166;
+    --blue:#1e8cff;--blue-bg:#0a1828;--blue-border:#1e3a5f;
+    --amber:#f59e0b;--amber-bg:#1a1200;--amber-border:#2a200a;
+    --green:#22c55e;
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+// ─── DATA ─────────────────────────────────────────────────────────────────────
+const ROUTINE = [
+  { day:1, label:"Push A — Chest / Shoulders / Tri", short:"Push A",
+    sections:[
+      {name:"Primer", exercises:[{name:"Cable External Rotation",sets:2,reps:"15–20"}]},
+      {name:"Chest", exercises:[{name:"Flat Dumbbell Press",sets:4,reps:"6–8"},{name:"Incline Machine Press",sets:3,reps:"8–10"},{name:"Cable Fly",sets:3,reps:"12–15"}]},
+      {name:"Shoulders", exercises:[{name:"Barbell Overhead Press",sets:3,reps:"5–7"},{name:"Cable Lateral Raise",sets:3,reps:"12–15"}]},
+      {name:"Triceps", exercises:[{name:"Machine Dips",sets:3,reps:"6–10"},{name:"Cable Pushdowns",sets:3,reps:"10–12"}]}
+    ]},
+  { day:2, label:"Pull A — Back / Rear Delts / Bi", short:"Pull A",
+    sections:[
+      {name:"Primer", exercises:[{name:"Face Pulls",sets:2,reps:"15–20"}]},
+      {name:"Back", exercises:[{name:"Pull-Ups",sets:4,reps:"6–8"},{name:"T-Bar Row",sets:4,reps:"6–8"},{name:"Straight-Arm Pulldown",sets:3,reps:"10–12"}]},
+      {name:"Rear Delts", exercises:[{name:"Reverse Pec Deck",sets:3,reps:"12–15"}]},
+      {name:"Biceps", exercises:[{name:"Incline Dumbbell Curl",sets:3,reps:"6–10"},{name:"Hammer Curl",sets:3,reps:"8–10"}]}
+    ]},
+  { day:3, label:"Legs A — Squat Focus", short:"Legs A",
+    sections:[
+      {name:"Primer", exercises:[{name:"Back Extension",sets:2,reps:"12–15"}]},
+      {name:"Main Lift", exercises:[{name:"Barbell Squat",sets:4,reps:"5–7"},{name:"Romanian Deadlift",sets:3,reps:"8–10"},{name:"Leg Press",sets:3,reps:"10–12"},{name:"Seated Leg Curl",sets:3,reps:"10–12"},{name:"Standing Calf Raise",sets:4,reps:"10–12"}]},
+      {name:"Abs", exercises:[{name:"Cable Crunch",sets:3,reps:"12–15"},{name:"Hanging Leg Raise",sets:3,reps:"10–15"}]}
+    ]},
+  { day:4, label:"Push B — Chest / Shoulders / Tri", short:"Push B",
+    sections:[
+      {name:"Primer", exercises:[{name:"Cable External Rotation",sets:2,reps:"15–20"}]},
+      {name:"Chest", exercises:[{name:"Incline Dumbbell Press",sets:4,reps:"6–8"},{name:"Chest Press Machine",sets:3,reps:"8–10"},{name:"Cable Fly",sets:3,reps:"12–15"}]},
+      {name:"Shoulders", exercises:[{name:"Dumbbell Overhead Press",sets:3,reps:"6–8"},{name:"Dumbbell Lateral Raise",sets:3,reps:"12–15"},{name:"Face Pulls",sets:3,reps:"12–15"}]},
+      {name:"Triceps", exercises:[{name:"Rope Pushdown",sets:3,reps:"10–12"},{name:"Overhead Cable Extension",sets:3,reps:"10–12"}]}
+    ]},
+  { day:5, label:"Pull B — Back / Rear Delts / Bi", short:"Pull B",
+    sections:[
+      {name:"Primer", exercises:[{name:"Face Pulls",sets:2,reps:"15–20"}]},
+      {name:"Back", exercises:[{name:"Wide-Grip Lat Pulldown",sets:4,reps:"8–10"},{name:"Wide-Grip Seated Cable Row",sets:3,reps:"10–12"},{name:"Cable Pullover",sets:3,reps:"12–15"}]},
+      {name:"Rear Delts", exercises:[{name:"Reverse Pec Deck",sets:3,reps:"12–15"}]},
+      {name:"Biceps", exercises:[{name:"Bayesian Cable Curl",sets:3,reps:"10–12"},{name:"Hammer Curl",sets:3,reps:"10–12"}]}
+    ]},
+  { day:6, label:"Legs B — Deadlift Focus", short:"Legs B",
+    sections:[
+      {name:"Primer", exercises:[{name:"Back Extension",sets:2,reps:"12–15"}]},
+      {name:"Main Lift", exercises:[{name:"Deadlift",sets:3,reps:"4–6"},{name:"Pendulum Squat",sets:4,reps:"8–10"},{name:"Hip Thrust",sets:3,reps:"8–10"},{name:"Bulgarian Split Squat",sets:3,reps:"8–10"},{name:"Lying Leg Curl",sets:3,reps:"10–12"},{name:"Standing Calf Raise",sets:4,reps:"12–15"}]},
+      {name:"Abs", exercises:[{name:"Cable Crunch",sets:3,reps:"12–15"},{name:"Pallof Press",sets:3,reps:"10–15"}]}
+    ]}
+];
+
+// ─── STORAGE ──────────────────────────────────────────────────────────────────
+const LS = {
+  get(k){try{const v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch{return null;}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch{}}
+};
+
+function loadTemplates(){
+  const saved=LS.get('gt-tmpl-v3');
+  if(saved) return saved;
+  const t={};
+  ROUTINE.forEach(d=>{t[d.day]=buildTemplate(d);});
+  return t;
+}
+
+function buildTemplate(dayDef){
+  const exercises=[];
+  dayDef.sections.forEach(sec=>{
+    sec.exercises.forEach(ex=>{
+      exercises.push({
+        name:ex.name, section:sec.name, reps:ex.reps,
+        sets:Array.from({length:ex.sets},()=>({warmup:false,weight:'',reps:''}))
+      });
+    });
+  });
+  return exercises;
+}
+
+function loadLogs(){return LS.get('gt-logs-v3')||{};}
+
+function getPR(logs,exName){
+  let max=0;
+  Object.values(logs).forEach(day=>{
+    (day[exName]||[]).forEach(s=>{if(!s.warmup&&s.weight>max)max=s.weight;});
+  });
+  return max;
+}
+
+function getLastSession(logs,exName){
+  const entries=Object.entries(logs)
+    .filter(([,d])=>d[exName]?.length)
+    .sort(([a],[b])=>b.localeCompare(a));
+  if(!entries.length) return null;
+  return {date:entries[0][0], sets:entries[0][1][exName]};
+}
+
+function loadWorkoutDates(){return LS.get('gt-wdates-v1')||{};}
+
+function getLastWorkoutDate(dayNum){
+  return state.workoutDates[dayNum]||null;
+}
+
+function fmtDate(s){
+  if(!s) return null;
+  const d=new Date(s+'T00:00:00');
+  const today=new Date(); today.setHours(0,0,0,0);
+  const diff=Math.round((today-d)/86400000);
+  if(diff===0) return 'Today';
+  if(diff===1) return 'Yesterday';
+  if(diff<7) return `${diff}d ago`;
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+}
+
+function fmtTimer(s){
+  const m=Math.floor(s/60), sec=s%60;
+  return `${m}:${sec.toString().padStart(2,'0')}`;
+}
+
+function todayKey(){return new Date().toISOString().split('T')[0];}
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let state = {
+  screen: 'home', // home | workout
+  templates: loadTemplates(),
+  logs: loadLogs(),
+  workoutDates: loadWorkoutDates(),
+  selectedDay: null,
+  session: null,       // [{name,section,reps,sets:[{warmup,weight,reps,done}]}]
+  sessionStart: null,
+  timerSecs: 0,
+  timerInterval: null,
+  savedFlash: false,
+};
+
+function setState(patch){
+  Object.assign(state,patch);
+  render();
+}
+
+function savePersist(){
+  LS.set('gt-logs-v3',state.logs);
+  LS.set('gt-tmpl-v3',state.templates);
+  LS.set('gt-wdates-v1',state.workoutDates);
+}
+
+// ─── ACTIONS ──────────────────────────────────────────────────────────────────
+function startWorkout(dayNum){
+  const tmpl=state.templates[dayNum];
+  const session=tmpl.map(ex=>({
+    ...ex,
+    sets:ex.sets.map(s=>({...s,done:false}))
+  }));
+  if(state.timerInterval) clearInterval(state.timerInterval);
+  const interval=setInterval(()=>{
+    state.timerSecs++;
+    // Just update timer display without full re-render
+    const el=document.getElementById('timer-display');
+    if(el) el.textContent=fmtTimer(state.timerSecs);
+  },1000);
+  setState({
+    screen:'workout',
+    selectedDay:dayNum,
+    session,
+    sessionStart:Date.now(),
+    timerSecs:0,
+    timerInterval:interval,
+    savedFlash:false
+  });
+}
+
+function discardWorkout(){
+  if(state.timerInterval) clearInterval(state.timerInterval);
+  setState({screen:'home',session:null,selectedDay:null,timerInterval:null,timerSecs:0});
+}
+
+function updateSet(exIdx,sIdx,field,val){
+  const sets=state.session[exIdx].sets;
+  sets[sIdx][field]=val;
+  // Autofill forward: propagate to later sets that are still blank or
+  // still equal to what we previously auto-filled from this same set.
+  for(let i=sIdx+1;i<sets.length;i++){
+    if(sets[i][field]===''||sets[i]._autofill===sIdx){
+      sets[i][field]=val;
+      sets[i]._autofill=sIdx; // remember which set drove this fill
+      // Update the DOM input directly without full re-render
+      const el=document.getElementById((field==='weight'?'w':'r')+'-'+exIdx+'-'+i);
+      if(el) el.value=val;
+    } else {
+      break; // stop as soon as we hit a set the user has customised
+    }
+  }
+}
+
+function toggleWarmup(exIdx,sIdx){
+  state.session[exIdx].sets[sIdx].warmup=!state.session[exIdx].sets[sIdx].warmup;
+  renderSet(exIdx,sIdx);
+}
+
+function toggleDone(exIdx,sIdx){
+  state.session[exIdx].sets[sIdx].done=!state.session[exIdx].sets[sIdx].done;
+  renderSet(exIdx,sIdx);
+}
+
+function addSet(exIdx){
+  state.session[exIdx].sets.push({warmup:false,weight:'',reps:'',done:false});
+  renderExercise(exIdx);
+}
+
+function removeSet(exIdx,sIdx){
+  state.session[exIdx].sets.splice(sIdx,1);
+  renderExercise(exIdx);
+}
+
+function saveWorkout(){
+  const session=state.session;
+  const logEntry={};
+  session.forEach(ex=>{
+    const valid=ex.sets
+      .filter(s=>s.weight!==''||s.reps!=='')
+      .map(s=>({warmup:!!s.warmup,weight:parseFloat(s.weight)||0,reps:parseInt(s.reps)||0}));
+    if(valid.length) logEntry[ex.name]=valid;
+  });
+
+  const key=todayKey();
+  const newLogs={...state.logs,[key]:{...(state.logs[key]||{}),...logEntry}};
+
+  // Update template structure (set count + warmup flags, clear values)
+  const newTemplate=session.map(ex=>({
+    name:ex.name, section:ex.section, reps:ex.reps,
+    sets:ex.sets.map(s=>({warmup:s.warmup,weight:'',reps:''}))
+  }));
+  const newTemplates={...state.templates,[state.selectedDay]:newTemplate};
+
+  const newWorkoutDates={...state.workoutDates,[state.selectedDay]:key};
+  if(state.timerInterval) clearInterval(state.timerInterval);
+  state.logs=newLogs;
+  state.templates=newTemplates;
+  state.workoutDates=newWorkoutDates;
+  savePersist();
+
+  setState({savedFlash:true,timerInterval:null});
+  setTimeout(()=>{
+    setState({screen:'home',session:null,selectedDay:null,timerSecs:0,savedFlash:false});
+  },1200);
+}
+
+// ─── PARTIAL RENDERERS ────────────────────────────────────────────────────────
+function renderSet(exIdx,sIdx){
+  const el=document.getElementById(`set-${exIdx}-${sIdx}`);
+  if(el){const fresh=buildSetHTML(exIdx,sIdx); el.outerHTML=fresh; bindSetInputs(exIdx,sIdx);}
+  updateExHeader(exIdx);
+}
+
+function renderExercise(exIdx){
+  const el=document.getElementById(`ex-${exIdx}`);
+  if(el){el.innerHTML=buildExerciseInnerHTML(exIdx); bindExerciseInputs(exIdx);}
+  updateExHeader(exIdx);
+}
+
+function updateExHeader(exIdx){
+  const ex=state.session[exIdx];
+  const done=ex.sets.filter(s=>s.done).length;
+  const total=ex.sets.length;
+  const el=document.getElementById(`ex-progress-${exIdx}`);
+  if(el) el.textContent=`${done}/${total}`;
+  const bar=document.getElementById(`ex-bar-${exIdx}`);
+  if(bar) bar.style.width=`${total?Math.round(done/total*100):0}%`;
+}
+
+// ─── HTML BUILDERS ────────────────────────────────────────────────────────────
+function buildSetHTML(exIdx,sIdx){
+  const s=state.session[exIdx].sets[sIdx];
+  const ex=state.session[exIdx];
+  const lastS=getLastSession(state.logs,ex.name);
+  const prevSet=lastS?.sets.filter(ps=>!ps.warmup)[sIdx] || null;
+  const prevWarmup=lastS?.sets.filter(ps=>ps.warmup)[sIdx] || null;
+  const prevData=s.warmup ? (prevWarmup||prevSet) : prevSet;
+  const prevText=prevData ? `${prevData.weight}kg×${prevData.reps}` : '—';
+
+  // Count which work set number this is
+  let workSetNum=0;
+  for(let i=0;i<=sIdx;i++) if(!state.session[exIdx].sets[i].warmup) workSetNum++;
+
+  const label=s.warmup ? 'W' : `${workSetNum}`;
+  const isDone=s.done;
+
+  return `<div id="set-${exIdx}-${sIdx}" style="display:grid;grid-template-columns:26px 1fr 1fr 1fr 28px;gap:5px;align-items:center;margin-bottom:5px;${isDone?'opacity:0.4':''}">
+    <!-- Label / warmup toggle -->
+    <button onclick="toggleWarmup(${exIdx},${sIdx})" style="background:${s.warmup?'var(--amber-bg)':'transparent'};border:1px solid ${s.warmup?'var(--amber-border)':'var(--bg3)'};border-radius:6px;color:${s.warmup?'var(--amber)':'var(--text3)'};font-family:'Teko',sans-serif;font-size:13px;font-weight:700;width:26px;height:30px;cursor:pointer;line-height:1;">${label}</button>
+    <!-- Prev -->
+    <div style="background:var(--bg2);border-radius:7px;height:30px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--text3);font-weight:500;letter-spacing:-0.01em;">${prevText}</div>
+    <!-- Weight -->
+    <input id="w-${exIdx}-${sIdx}" type="number" inputmode="decimal" placeholder="kg" value="${s.weight}"
+      onchange="state.session[${exIdx}].sets[${sIdx}].weight=this.value"
+      oninput="state.session[${exIdx}].sets[${sIdx}].weight=this.value"
+      style="background:var(--bg);color:${isDone?'var(--text3)':(s.warmup?'#6b5a1a':'var(--text)')};border:1px solid ${s.warmup?'var(--amber-border)':'var(--bg3)'};border-radius:7px;padding:0 6px;height:30px;font-size:15px;text-align:center;font-family:'Teko',sans-serif;font-weight:600;width:100%;"/>
+    <!-- Reps -->
+    <input id="r-${exIdx}-${sIdx}" type="number" inputmode="numeric" placeholder="reps" value="${s.reps}"
+      onchange="state.session[${exIdx}].sets[${sIdx}].reps=this.value"
+      oninput="state.session[${exIdx}].sets[${sIdx}].reps=this.value"
+      style="background:var(--bg);color:${isDone?'var(--text3)':(s.warmup?'#6b5a1a':'var(--text)')};border:1px solid ${s.warmup?'var(--amber-border)':'var(--bg3)'};border-radius:7px;padding:0 6px;height:30px;font-size:15px;text-align:center;font-family:'Teko',sans-serif;font-weight:600;width:100%;"/>
+    <!-- Done checkmark only -->
+    <button onclick="toggleDone(${exIdx},${sIdx})" style="background:${isDone?'#052010':'transparent'};border:1px solid ${isDone?'#0d3a1c':'var(--bg3)'};border-radius:6px;color:${isDone?'var(--green)':'var(--text3)'};font-size:14px;width:28px;height:30px;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center;">✓</button>
+  </div>`;
+}
+
+function buildExerciseInnerHTML(exIdx){
+  const ex=state.session[exIdx];
+  const pr=getPR(state.logs,ex.name);
+  const done=ex.sets.filter(s=>s.done).length;
+  const total=ex.sets.length;
+  const pct=total?Math.round(done/total*100):0;
+
+  // Column headers
+  const headers=`<div style="display:grid;grid-template-columns:26px 1fr 1fr 1fr 28px;gap:5px;margin-bottom:4px;padding:0 1px;">
+    <div></div>
+    <div style="font-size:9px;color:var(--text3);font-weight:600;letter-spacing:0.1em;text-align:center;text-transform:uppercase;">Prev</div>
+    <div style="font-size:9px;color:var(--text3);font-weight:600;letter-spacing:0.1em;text-align:center;text-transform:uppercase;">kg</div>
+    <div style="font-size:9px;color:var(--text3);font-weight:600;letter-spacing:0.1em;text-align:center;text-transform:uppercase;">Reps</div>
+    <div></div>
+  </div>`;
+
+  const setsHTML=ex.sets.map((_,si)=>buildSetHTML(exIdx,si)).join('');
+  const addBtn=`<div style="display:flex;gap:6px;margin-top:3px;">
+    <button onclick="addSet(${exIdx})" style="flex:1;background:none;border:1px dashed var(--bg3);color:var(--text3);border-radius:7px;padding:6px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;">+ set</button>
+    ${ex.sets.length>1?`<button onclick="removeSet(${exIdx},${ex.sets.length-1})" style="background:none;border:1px dashed var(--bg3);color:var(--text3);border-radius:7px;padding:6px 10px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;">− set</button>`:''}
+  </div>`;
+
+  return `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+      <div>
+        <div style="font-family:'Teko',sans-serif;font-size:17px;font-weight:700;letter-spacing:0.02em;color:#c8d6e8;line-height:1;">${ex.name}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:1px;">${ex.reps} reps</div>
+      </div>
+      <div style="text-align:right;display:flex;align-items:center;gap:10px;">
+        <div style="text-align:center;">
+          <div id="ex-progress-${exIdx}" style="font-family:'Teko',sans-serif;font-size:14px;font-weight:700;color:${pct===100?'var(--green)':'var(--text3)'};">${done}/${total}</div>
+        </div>
+        ${pr>0?`<div><div style="font-size:9px;color:var(--blue);font-weight:600;letter-spacing:0.1em;">PR</div><div style="font-family:'Teko',sans-serif;font-size:17px;font-weight:700;color:var(--blue);line-height:1;">${pr}kg</div></div>`:''}
+      </div>
+    </div>
+    <!-- progress bar -->
+    <div style="height:2px;background:var(--bg2);border-radius:1px;margin-bottom:10px;overflow:hidden;">
+      <div id="ex-bar-${exIdx}" style="height:2px;background:${pct===100?'var(--green)':'var(--blue)'};border-radius:1px;width:${pct}%;transition:width 0.3s;"></div>
+    </div>
+    ${headers}
+    ${setsHTML}
+    ${addBtn}
+  `;
+}
+
+function bindExerciseInputs(exIdx){
+  // inputs use oninput/onchange inline, no extra binding needed
+}
+function bindSetInputs(exIdx,sIdx){}
+
+// ─── DISCARD CONFIRM ─────────────────────────────────────────────────────────
+function showDiscardConfirm(){
+  const el=document.getElementById('discard-overlay');
+  if(el){el.style.display='flex';return;}
+  const overlay=document.createElement('div');
+  overlay.id='discard-overlay';
+  overlay.style.cssText='position:fixed;inset:0;z-index:100;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.innerHTML=`<div style="background:#0d1219;border:1px solid #1e2a38;border-radius:16px;padding:24px;width:100%;max-width:320px;text-align:center;">
+    <div style="font-family:'Teko',sans-serif;font-size:22px;font-weight:700;color:#dde3ec;margin-bottom:6px;">End Workout?</div>
+    <div style="font-size:13px;color:#3d5166;margin-bottom:20px;">Progress will not be saved.</div>
+    <div style="display:flex;gap:10px;">
+      <button onclick="document.getElementById('discard-overlay').style.display='none'" style="flex:1;background:none;border:1px solid #1e2a38;color:#8a9ab0;border-radius:10px;padding:12px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:14px;">Keep going</button>
+      <button onclick="discardWorkout()" style="flex:1;background:#1a0a0a;border:1px solid #5a1010;color:#ff4444;border-radius:10px;padding:12px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;">Discard</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+}
+
+// ─── MAIN RENDER ──────────────────────────────────────────────────────────────
+function render(){
+  const app=document.getElementById('app');
+  if(state.screen==='home') app.innerHTML=renderHome();
+  else if(state.screen==='workout') app.innerHTML=renderWorkout();
+}
+
+function renderHome(){
+  const cards=ROUTINE.map(d=>{
+    const last=getLastWorkoutDate(d.day);
+    const lastText=last?fmtDate(last):null;
+    return `<button onclick="startWorkout(${d.day})" style="width:100%;background:var(--bg1);border:1px solid var(--bg2);border-radius:14px;padding:16px;cursor:pointer;text-align:left;transition:border-color 0.15s;display:flex;align-items:center;justify-content:space-between;gap:12px;"
+      onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--bg2)'">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:40px;height:40px;background:var(--bg2);border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'Teko',sans-serif;font-size:20px;font-weight:700;color:var(--text3);flex-shrink:0;">${d.day}</div>
+        <div>
+          <div style="font-family:'Teko',sans-serif;font-size:16px;font-weight:700;letter-spacing:0.03em;color:var(--text);line-height:1.1;">${d.short.toUpperCase()}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px;">${d.sections.map(s=>s.name).join(' · ')}</div>
+          ${lastText?`<div style="font-size:11px;color:var(--blue);margin-top:3px;opacity:0.8;">Last: ${lastText}</div>`:`<div style="font-size:11px;color:var(--text3);margin-top:3px;opacity:0.5;">Not yet done</div>`}
+        </div>
+      </div>
+      <div style="color:var(--text3);font-size:18px;flex-shrink:0;">›</div>
+    </button>`;
+  }).join('');
+
+  return `
+    <div style="padding:32px 16px 16px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:28px;">
+        <div>
+          <div style="font-size:11px;color:var(--text3);font-weight:600;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:4px;">Ready to train?</div>
+          <div style="font-family:'Teko',sans-serif;font-size:36px;font-weight:700;letter-spacing:0.02em;color:var(--text);line-height:1;">IRON LOG</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <button onclick="showCycleMenu()" style="background:var(--bg1);border:1px solid var(--bg2);border-radius:10px;color:var(--text3);padding:10px 12px;cursor:pointer;font-size:12px;font-family:'DM Sans',sans-serif;font-weight:600;">Cycles</button>
+          <div style="width:44px;height:44px;background:linear-gradient(135deg,var(--blue) 0%,#0051cc 100%);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 4px 16px rgba(30,140,255,0.3);">🏋️</div>
+        </div>
+      </div>
+      <div style="font-size:10px;color:var(--text3);font-weight:600;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:10px;">Select Workout</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        ${cards}
+      </div>
+    </div>`;
+}
+
+function renderWorkout(){
+  const dayDef=ROUTINE.find(d=>d.day===state.selectedDay);
+
+  // Group exercises by section
+  const sections=[];
+  let cur=null;
+  state.session.forEach((ex,idx)=>{
+    if(!cur||cur.name!==ex.section){cur={name:ex.section,items:[]};sections.push(cur);}
+    cur.items.push({ex,idx});
+  });
+
+  const totalSets=state.session.reduce((a,ex)=>a+ex.sets.length,0);
+  const doneSets=state.session.reduce((a,ex)=>a+ex.sets.filter(s=>s.done).length,0);
+  const pct=totalSets?Math.round(doneSets/totalSets*100):0;
+
+  const sectionsHTML=sections.map(sec=>{
+    const secItems=sec.items.map(({ex,idx})=>{
+      return `<div id="ex-${idx}" style="background:var(--bg1);border:1px solid var(--bg2);border-radius:14px;padding:14px 12px 10px;margin-bottom:8px;">
+        ${buildExerciseInnerHTML(idx)}
+      </div>`;
+    }).join('');
+
+    return `<div style="margin-bottom:8px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <div style="height:1px;flex:1;background:var(--bg2);"></div>
+        <div style="font-size:10px;font-weight:600;letter-spacing:0.18em;color:var(--text3);text-transform:uppercase;">${sec.name}</div>
+        <div style="height:1px;flex:1;background:var(--bg2);"></div>
+      </div>
+      ${secItems}
+    </div>`;
+  }).join('');
+
+  const saveLabel=state.savedFlash?'✓ SAVED!':'FINISH WORKOUT';
+  const saveBg=state.savedFlash?'linear-gradient(135deg,#16a34a,#14532d)':'linear-gradient(135deg,var(--blue) 0%,#0051cc 100%)';
+
+  return `
+    <div style="min-height:100vh;">
+      <!-- Sticky header -->
+      <div style="position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--bg2);padding:12px 16px 10px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <div>
+            <div style="font-family:'Teko',sans-serif;font-size:20px;font-weight:700;letter-spacing:0.03em;color:var(--text);line-height:1;">
+              DAY ${state.selectedDay} — ${dayDef.short.toUpperCase()}
+            </div>
+            <div style="font-size:11px;color:var(--text3);margin-top:1px;">${doneSets}/${totalSets} sets done</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div id="timer-display" style="font-family:'Teko',sans-serif;font-size:22px;font-weight:700;color:var(--blue);letter-spacing:0.04em;">${fmtTimer(state.timerSecs)}</div>
+            <button onclick="showDiscardConfirm()" id="discard-btn" style="background:none;border:1px solid var(--bg3);color:var(--text3);border-radius:8px;padding:6px 10px;cursor:pointer;font-size:12px;font-family:'DM Sans',sans-serif;">✕ End</button>
+          </div>
+        </div>
+        <!-- Overall progress bar -->
+        <div style="height:3px;background:var(--bg2);border-radius:2px;overflow:hidden;">
+          <div style="height:3px;background:${pct===100?'var(--green)':'var(--blue)'};border-radius:2px;width:${pct}%;transition:width 0.3s;"></div>
+        </div>
+      </div>
+
+      <!-- Exercises -->
+      <div style="padding:14px 12px 100px;">
+        ${sectionsHTML}
+
+        <button onclick="saveWorkout()" style="width:100%;background:${saveBg};color:white;border:none;border-radius:14px;padding:18px;cursor:pointer;font-family:'Teko',sans-serif;font-size:20px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;box-shadow:0 6px 24px rgba(30,140,255,0.25);transition:background 0.4s;">
+          ${saveLabel}
+        </button>
+      </div>
+    </div>`;
+}
+
+
+// ─── CYCLE / EXPORT ───────────────────────────────────────────────────────────
+function exportCycle(){
+  const data={
+    exported: new Date().toISOString(),
+    logs: state.logs,
+    workoutDates: state.workoutDates
+  };
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='ironlog-cycle-'+new Date().toISOString().split('T')[0]+'.json';
+  a.click();
+}
+
+function closeCycle(){
+  exportCycle();
+  // Clear logs and workout dates, keep templates
+  state.logs={};
+  state.workoutDates={};
+  LS.set('gt-logs-v3',{});
+  LS.set('gt-wdates-v1',{});
+  setState({screen:'home'});
+}
+
+function importCycle(e){
+  const file=e.target.files[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const data=JSON.parse(ev.target.result);
+      if(data.logs){
+        state.logs={...state.logs,...data.logs};
+        state.workoutDates={...state.workoutDates,...(data.workoutDates||{})};
+        savePersist();
+        setState({screen:'home'});
+        alert('Cycle imported! Your history has been restored.');
+      }
+    }catch(err){alert('Could not read file.');}
+  };
+  reader.readAsText(file);
+}
+
+function showCycleMenu(){
+  const existing=document.getElementById('cycle-overlay');
+  if(existing){existing.style.display='flex';return;}
+  const overlay=document.createElement('div');
+  overlay.id='cycle-overlay';
+  overlay.style.cssText='position:fixed;inset:0;z-index:100;background:rgba(0,0,0,0.75);display:flex;align-items:flex-end;justify-content:center;padding:0;';
+  overlay.innerHTML=`<div style="background:#0d1219;border:1px solid #1e2a38;border-top-left-radius:20px;border-top-right-radius:20px;padding:24px 20px 36px;width:100%;max-width:500px;">
+    <div style="width:36px;height:4px;background:#1e2a38;border-radius:2px;margin:0 auto 20px;"></div>
+    <div style="font-family:'Teko',sans-serif;font-size:22px;font-weight:700;color:#dde3ec;margin-bottom:4px;">Cycle Management</div>
+    <div style="font-size:13px;color:#3d5166;margin-bottom:20px;">Export your logs before starting a new cycle, or import a previous one.</div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <button onclick="exportCycle();document.getElementById('cycle-overlay').style.display='none';" style="background:#0a1828;border:1px solid #1e3a5f;color:#1e8cff;border-radius:12px;padding:14px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;text-align:left;">
+        📥 Export this cycle (download JSON)
+      </button>
+      <button onclick="if(confirm('This will clear all your workout history and start fresh. Your logs will be exported first.')){closeCycle();document.getElementById('cycle-overlay').style.display='none';}" style="background:#1a0808;border:1px solid #5a1010;color:#ff6b6b;border-radius:12px;padding:14px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;text-align:left;">
+        🔄 Close cycle &amp; start fresh (exports first)
+      </button>
+      <label style="background:#0d1219;border:1px solid #1e2a38;color:#8a9ab0;border-radius:12px;padding:14px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;text-align:left;display:block;">
+        📤 Import a previous cycle (merge)
+        <input type="file" accept=".json" onchange="importCycle(event);document.getElementById('cycle-overlay').style.display='none';" style="display:none;"/>
+      </label>
+      <button onclick="document.getElementById('cycle-overlay').style.display='none'" style="background:none;border:1px solid #1e2a38;color:#3d5166;border-radius:12px;padding:12px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:14px;">Cancel</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+}
+
+
+// ─── STORAGE HEALTH ───────────────────────────────────────────────────────────
+// Persist data on every visibility change (tab hide/switch) so nothing is lost
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState==='hidden') savePersist();
+});
+
+// Write a heartbeat so we can detect if storage was wiped
+function checkStorageHealth(){
+  const sentinel=LS.get('gt-sentinel');
+  if(!sentinel){
+    // First run or storage was wiped — re-save everything
+    LS.set('gt-sentinel','1');
+    savePersist();
+  }
+}
+LS.set('gt-sentinel','1');
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+checkStorageHealth();
+render();
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  const swCode = `
+const CACHE = 'ironlog-v1';
+const FONT_URLS = [
+  'https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Teko:wght@500;600;700&display=swap'
+];
+
+self.addEventListener('install', e => {
+  self.skipWaiting();
+  e.waitUntil(
+    caches.open(CACHE).then(cache => {
+      return cache.addAll(FONT_URLS).catch(() => {});
+    })
+  );
+});
+
+self.addEventListener('activate', e => {
+  e.waitUntil(clients.claim());
+});
+
+self.addEventListener('fetch', e => {
+  // Cache-first for fonts, network-first for everything else
+  if (e.request.url.includes('fonts.googleapis') || e.request.url.includes('fonts.gstatic')) {
+    e.respondWith(
+      caches.match(e.request).then(cached => cached || fetch(e.request).then(res => {
+        const clone = res.clone();
+        caches.open(CACHE).then(c => c.put(e.request, clone));
+        return res;
+      }))
+    );
+  } else if (e.request.mode === 'navigate') {
+    e.respondWith(
+      fetch(e.request).catch(() => caches.match(e.request))
+    );
+  }
+});
+`;
+  const blob = new Blob([swCode], {type: 'application/javascript'});
+  const swUrl = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(swUrl).catch(() => {});
+}
+</script>
+</body>
+</html>
